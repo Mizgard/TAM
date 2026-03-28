@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 
-// Punkt startowy każdej aplikacji Flutter
 void main() {
-  runApp(const MyApp()); // Uruchomienie głównego widgetu 
+  runApp(const MyApp()); 
 }
 
 class MyApp extends StatelessWidget {
@@ -10,46 +9,68 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp( // Główny widget aplikacji 
+    return MaterialApp( 
       title: 'KrakFlow',
-      home: Scaffold( // Podstawowy layout ekranu 
-        appBar: AppBar( // Pasek górny 
-          title: const Text("KrakFlow"),
+      home: Scaffold( 
+        appBar: AppBar( 
+          title: const Text("KrakFlow"), 
         ),
         body: Center( 
           child: Column( 
-            mainAxisAlignment: MainAxisAlignment.center, // Dodatkowe wyśrodkowanie wewnątrz kolumny
-            children: const [ // Lista elementów wyświetlanych jeden pod drugim [
+            mainAxisAlignment: MainAxisAlignment.center, 
+            children: const [
               Text("KrakFlow"), 
               SizedBox(height: 20),
               Text("Organizacja studiów"),
               SizedBox(height: 20),
               Text("Dzisiejsze zadania"),
-              Card(
-                child: ListTile(
-                leading: Icon(Icons.task),
-                title: Text("Projekt Flutter"),
-                subtitle: Text("termin: jutro"),
+              SizedBox(height: 20),
               
+              TaskCard(
+                title: "Projekt Flutter", 
+                subtitle: "termin: jutro", 
+                icon: Icons.task, 
               ),
-              ), 
-              Card(
-                child: ListTile(
-                leading: Icon(Icons.task),
-                title: Text("Cwiczenia z matematyki"),
-                subtitle: Text("termin:  dziś"),
-                ), 
+              TaskCard(
+                title: "Ćwiczenia z matematyki", 
+                subtitle: "termin: dziś", 
+                icon: Icons.calculate,
               ),
-              Card(
-                child: ListTile(
-                leading: Icon(Icons.task),
-                title: Text("Przeczytać o widgetach"),
-                subtitle: Text("termin:  w tym tygodniu"),
-                ), 
+              TaskCard(
+                title: "Przeczytać o widgetach", 
+                subtitle: "termin: w tym tygodniu", 
+                icon: Icons.book,
               ),
             ],
           ),
         ),
+        floatingActionButton: FloatingActionButton(
+          onPressed: () {},
+          child: const Icon(Icons.add),
+        ),
+      ),
+    );
+  }
+}
+
+class TaskCard extends StatelessWidget {
+  final String title;    
+  final String subtitle;
+  final IconData icon;  
+  const TaskCard({
+    required this.title, 
+    required this.subtitle, 
+    required this.icon, 
+    super.key
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card( 
+      child: ListTile( 
+        leading: Icon(icon), 
+        title: Text(title), 
+        subtitle: Text(subtitle),
       ),
     );
   }
