@@ -1,20 +1,18 @@
-import 'dart:ffi';
 
 import 'package:flutter/material.dart';
 import 'task_repository.dart';
+import 'services/task_api_services.dart';
 
 void main() {
   runApp(const MyApp());
 }
-
-final List<Task> tasks = TaskRepository.tasks;
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(title: 'KrakFlow', home: HomeScreen());
+    return MaterialApp(title: 'KrakFlow', home: const HomeScreen());
   }
 }
 
@@ -25,6 +23,14 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  late Future<List<Task>> tasksFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    tasksFuture = TaskApiService.fetchTasks();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -34,42 +40,73 @@ class _HomeScreenState extends State<HomeScreen> {
           style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
         ),
       ),
-      body: Padding(
-        padding: EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            const Padding(
-              padding: EdgeInsets.all(16.0),
-              child: Text(
-                'Dzisiejsze zadania',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              ),
+      body: FutureBuilder<List<Task>>(
+        future: tasksFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return Center(
+              child: CircularProgressIndicator(),
+            );
+    } 
+          else if (snapshot.hasError) {
+              return Center(
+              child: Text("Błąd: ${snapshot.error}"),);
+              }
+          else if (!snapshot.hasData) {
+            return const Center(
+              child: Text('Brak zadań'),
+            );
+          }
+
+          final tasks = snapshot.data ?? [];
+          final completedTasks = tasks.where((task) => task.done).length;
+
+          return Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              children: [
+                const Padding(
+                  padding: EdgeInsets.all(16.0),
+                  child: Text(
+                    'Zadania',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                Text("Razem: ${tasks.length} zadań"),
+                Text(
+                  "Wykonane: $completedTasks zadań",
+                ),
+                Expanded(
+                  child: ListView.builder(
+                    itemCount: tasks.length,
+                    itemBuilder: (context, index) {
+                      final task = tasks[index];
+                      return Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: TaskCard(
+                          title: task.title,
+                          subtitle: task.deadline,
+                          priority: task.priority,
+                          done: task.done,
+                          onToggleDone: () {
+                            setState(() {
+                              tasks[index] = Task(
+                                title: task.title,
+                                deadline: task.deadline,
+                                priority: task.priority,
+                                done: !task.done,
+                              );
+                            });
+                          },
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
             ),
-            Text("Masz ${tasks.length} zadania do wykonania"),
-            Text(
-              "Masz ${tasks.where((task) => task.done).length} wykonanych zadań",
-            ),
-            Expanded(
-              child: ListView.builder(
-                itemCount: tasks.length,
-                itemBuilder: (context, index) {
-                  final task = tasks[index];
-                  return Padding(
-                    padding: EdgeInsets.all(8.0),
-                    child: TaskCard(
-                      title: task.title,
-                      subtitle: task.deadline,
-                      priority: task.priority,
-                      icon: task.done
-                          ? Icons.check_circle
-                          : Icons.radio_button_unchecked,
-                    ),
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
+          );
+        },
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
@@ -165,14 +202,16 @@ class AddTaskScreen extends StatelessWidget {
 class TaskCard extends StatelessWidget {
   final String title;
   final String subtitle;
-  final IconData icon;
+  final bool done;
   final String priority;
+  final VoidCallback onToggleDone;
 
   const TaskCard({
     required this.title,
     required this.subtitle,
     required this.priority,
-    required this.icon,
+    required this.done,
+    required this.onToggleDone,
     super.key,
   });
 
@@ -180,10 +219,22 @@ class TaskCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       child: ListTile(
-        leading: Icon(icon),
-        title: Text(title),
+        leading: IconButton(
+          icon: Icon(
+            done ? Icons.check_box : Icons.check_box_outline_blank,
+            color: done ? Colors.green : null,
+          ),
+          onPressed: onToggleDone,
+        ),
+        title: Text(
+          title,
+          style: TextStyle(
+            decoration: done ? TextDecoration.lineThrough : null,
+          ),
+        ),
         subtitle: Text(subtitle),
         trailing: Text(priority),
+        onTap: onToggleDone,
       ),
     );
   }
