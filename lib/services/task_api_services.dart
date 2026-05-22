@@ -25,6 +25,7 @@ class TaskApiService {
         final List todos = data["todos"];
         return todos.map((todo) {
           return Task(
+            id: todo["id"],
             title: todo["todo"],
             deadline: "Brak terminu",
             done: todo["completed"] ?? false,

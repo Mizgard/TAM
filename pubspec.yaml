@@ -10,6 +10,10 @@ dependencies:
   flutter:
     sdk: flutter
   http: ^1.0.0
+  hive_ce_flutter: ^2.3.3
+  hive_ce: ^2.19.3
+
+
 
 dev_dependencies:
   flutter_test:

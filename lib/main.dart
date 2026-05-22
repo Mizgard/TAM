@@ -1,9 +1,17 @@
 
 import 'package:flutter/material.dart';
 import 'task_repository.dart';
-import 'services/task_api_services.dart';
+import 'services/task_sync_service.dart';
+// import 'services/task_api_services.dart';
+import 'services/task_local_db.dart';
+import 'package:hive_ce_flutter/hive_flutter.dart';
+import 'dart:math';
+final random = Random();
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Hive.initFlutter(); // inicjalizacja
+  await Hive.openBox("tasks"); // otwarcie kontenera
   runApp(const MyApp());
 }
 
@@ -21,6 +29,10 @@ class HomeScreen extends StatefulWidget {
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
+Future<List<Task>> loadTasks() async {
+  await TaskSyncService.loadInitialDataIfNeeded();
+  return TaskLocalDatabase.getTasks();
+}
 
 class _HomeScreenState extends State<HomeScreen> {
   late Future<List<Task>> tasksFuture;
@@ -28,7 +40,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    tasksFuture = TaskApiService.fetchTasks();
+    tasksFuture = loadTasks();
   }
 
   @override
@@ -88,16 +100,19 @@ class _HomeScreenState extends State<HomeScreen> {
                           subtitle: task.deadline,
                           priority: task.priority,
                           done: task.done,
-                          onToggleDone: () {
-                            setState(() {
-                              tasks[index] = Task(
+                          onToggleDone: () async{
+                            final updatedTask = Task(
+                                id: task.id,
                                 title: task.title,
                                 deadline: task.deadline,
                                 priority: task.priority,
                                 done: !task.done,
                               );
-                            });
-                          },
+                            await TaskLocalDatabase.updateTask(updatedTask);
+                            setState(() {
+                              tasksFuture = loadTasks();
+                              });
+                            }
                         ),
                       );
                     },
@@ -129,8 +144,9 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           );
           if (newTask != null) {
+            await TaskLocalDatabase.addTask(newTask);
             setState(() {
-              TaskRepository.tasks.add(newTask);
+              tasksFuture = loadTasks();
             });
           }
         },
@@ -182,6 +198,7 @@ class AddTaskScreen extends StatelessWidget {
             ElevatedButton(
               onPressed: () {
                 final newTask = Task(
+                  id: Random().nextInt(1000000),
                   title: titleController.text,
                   deadline: deadlineController.text,
                   priority: priorityController.text,
